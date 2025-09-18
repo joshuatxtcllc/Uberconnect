@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uber Pickup - Jay's Frames</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide-react@latest/dist/umd/lucide-react.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            margin: 5px;
+        }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-active { background: #dbeafe; color: #1e40af; }
+        .status-success { background: #d1fae5; color: #065f46; }
+        .status-error { background: #fee2e2; color: #991b1b; }
+        .pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <h1 style="margin: 0; font-size: 2.5rem; font-weight: 700;">Jay's Frames</h1>
+                <p style="margin: 10px 0 0 0; font-size: 1.2rem; opacity: 0.9;">Professional Custom Framing</p>
+            </div>
+
+```
+        <!-- React App Container -->
+        <div id="uber-pickup-app" style="padding: 30px;"></div>
+    </div>
+    
+    <!-- Order Summary Section -->
+    <div class="card" style="margin-top: 20px;">
+        <div style="padding: 30px;">
+            <h2 style="margin: 0 0 20px 0; color: #1f2937; font-size: 1.5rem;">What Happens Next?</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                <div style="text-align: center; padding: 20px;">
+                    <div style="width: 60px; height: 60px; background: #3b82f6; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center;">
+                        <span style="color: white; font-size: 24px;">📦</span>
+                    </div>
+                    <h3 style="margin: 0 0 10px 0; color: #374151;">1. Pickup Scheduled</h3>
+                    <p style="margin: 0; color: #6b7280; font-size: 14px;">Uber driver collects your artwork from your location</p>
+                </div>
+                <div style="text-align: center; padding: 20px;">
+                    <div style="width: 60px; height: 60px; background: #10b981; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center;">
+                        <span style="color: white; font-size: 24px;">🏪</span>
+                    </div>
+                    <h3 style="margin: 0 0 10px 0; color: #374151;">2. Quality Check</h3>
+                    <p style="margin: 0; color: #6b7280; font-size: 14px;">We inspect and measure your artwork upon arrival</p>
+                </div>
+                <div style="text-align: center; padding: 20px;">
+                    <div style="width: 60px; height: 60px; background: #f59e0b; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center;">
+                        <span style="color: white; font-size: 24px;">🎨</span>
+                    </div>
+                    <h3 style="margin: 0 0 10px 0; color: #374151;">3. Custom Framing</h3>
+                    <p style="margin: 0; color: #6b7280; font-size: 14px;">Professional framing with progress notifications</p>
+                </div>
+                <div style="text-align: center; padding: 20px;">
+                    <div style="width: 60px; height: 60px; background: #8b5cf6; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center;">
+                        <span style="color: white; font-size: 24px;">✨</span>
+                    </div>
+                    <h3 style="margin: 0 0 10px 0; color: #374151;">4. Ready for Pickup</h3>
+                    <p style="margin: 0; color: #6b7280; font-size: 14px;">Notification when your custom frame is complete</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/babel">
+    const { useState, useEffect } = React;
+    const { Truck, MapPin, Clock, CheckCircle, XCircle, Phone, Package, Star } = lucide;
+
+    // Mock customer info - replace with real data from your system
+    const mockCustomerInfo = {
+        name: "John Smith",
+        phone: "+1234567890",
+        email: "john@example.com"
+    };
+
+    const mockOrderId = "JF" + Date.now().toString().slice(-6);
+
+    function UberPickupApp() {
+        const [pickupStep, setPickupStep] = useState('quote');
+        const [quote, setQuote] = useState(null);
+        const [deliveryInfo, setDeliveryInfo] = useState(null);
+        const [loading, setLoading] = useState(false);
+        const [error, setError] = useState(null);
+        const [notifications, setNotifications] = useState([]);
+        const [pickupDetails, setPickupDetails] = useState({
+            address: '',
+            instructions: '',
+            phone: mockCustomerInfo.phone,
+            itemDescription: 'Original artwork for custom framing'
+        });
+
+        const addNotification = (message, type = 'info') => {
+            const notification = {
+                id: Date.now(),
+                message,
+                type,
+                timestamp: new Date()
+            };
+            setNotifications(prev => [notification, ...prev.slice(0, 4)]);
+        };
+
+        const handleStatusUpdate = (eventType, data) => {
+            switch (eventType) {
+                case 'pickup_scheduled':
+                    addNotification(`Pickup scheduled! Driver: ${data.courier?.name || 'Assigned'}`, 'success');
+                    break;
+                case 'status_update':
+                    if (data.status === 'picked_up') {
+                        addNotification('Your artwork has been picked up and is heading to our shop!', 'success');
+                    } else if (data.status === 'delivered') {
+                        addNotification('Artwork delivered to Jay\'s Frames. Quality check beginning!', 'success');
+                    }
+                    break;
+            }
+        };
+
+        // Simulate API calls for demo (replace with real API calls)
+        const getQuote = async () => {
+            setLoading(true);
+            setError(null);
+            
+            // Simulate API delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            if (!pickupDetails.address.trim()) {
+                setError('Please enter a pickup address');
+                setLoading(false);
+                return;
+            }
+            
+            // Mock quote data
+            const mockQuote = {
+                success: true,
+                estimatedFee: 1250, // $12.50 in cents
+                estimatedDuration: 900 // 15 minutes
+            };
+            
+            setQuote(mockQuote);
+            setPickupStep('confirm');
+            setLoading(false);
+            addNotification('Quote generated successfully!', 'success');
+        };
+
+        const schedulePickup = async () => {
+            setLoading(true);
+            setError(null);
+            
+            // Simulate API delay
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            
+            // Mock delivery data
+            const mockDeliveryInfo = {
+                success: true,
+                deliveryId: 'DEL_' + Math.random().toString(36).substr(2, 9),
+                trackingUrl: 'https://m.uber.com/looking?trip_id=mock_trip_id',
+                courier: {
+                    name: 'Mike Rodriguez',
+                    vehicle: 'Honda Civic - ABC 123',
+                    rating: 4.9
+                },
+                status: 'pending',
+                estimatedArrival: new Date(Date.now() + 20 * 60000).toISOString()
+            };
+            
+            setDeliveryInfo(mockDeliveryInfo);
+            setPickupStep('scheduled');
+            setLoading(false);
+            handleStatusUpdate('pickup_scheduled', mockDeliveryInfo);
+            
+            // Simulate status updates
+            setTimeout(() => {
+                setDeliveryInfo(prev => ({ ...prev, status: 'en_route_to_pickup' }));
+                addNotification('Driver is on the way to pickup location', 'info');
+            }, 5000);
+            
+            setTimeout(() => {
+                setDeliveryInfo(prev => ({ ...prev, status: 'at_pickup' }));
+                addNotification('Driver arrived at pickup location', 'info');
+            }, 15000);
+            
+            setTimeout(() => {
+                setDeliveryInfo(prev => ({ ...prev, status: 'picked_up' }));
+                handleStatusUpdate('status_update', { status: 'picked_up' });
+                setPickupStep('tracking');
+            }, 25000);
+            
+            setTimeout(() => {
+                setDeliveryInfo(prev => ({ ...prev, status: 'delivered' }));
+                handleStatusUpdate('status_update', { status: 'delivered' });
+                setPickupStep('completed');
+            }, 45000);
+        };
+
+        const getStatusColor = (status) => {
+            const colors = {
+                pending: 'status-pending',
+                en_route_to_pickup: 'status-active',
+                at_pickup: 'status-active',
+                picked_up: 'status-success',
+                en_route_to_dropoff: 'status-active',
+                delivered: 'status-success',
+                cancelled: 'status-error'
+            };
+            return colors[status] || 'status-pending';
+        };
+
+        const getStatusMessage = (status) => {
+            const messages = {
+                pending: 'Finding nearby driver...',
+                en_route_to_pickup: 'Driver heading to your location',
+                at_pickup: 'Driver has arrived at pickup',
+                picked_up: 'Artwork picked up, heading to shop',
+                en_route_to_dropoff: 'On the way to Jay\'s Frames',
+                delivered: 'Delivered to Jay\'s Frames!',
+                cancelled: 'Pickup cancelled'
+            };
+            return messages[status] || status;
+        };
+
+        // Notifications Component
+        const NotificationCenter = () => (
+            <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 1000, maxWidth: '350px' }}>
+                {notifications.map(notification => (
+                    <div 
+                        key={notification.id}
+                        style={{
+                            background: notification.type === 'success' ? '#d1fae5' : 
+                                      notification.type === 'error' ? '#fee2e2' : '#e0f2fe',
+                            border: `1px solid ${notification.type === 'success' ? '#10b981' : 
+                                           notification.type === 'error' ? '#ef4444' : '#0ea5e9'}`,
+                            borderRadius: '8px',
+                            padding: '12px 16px',
+                            marginBottom: '10px',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                            animation: 'slideIn 0.3s ease-out'
+                        }}
+                    >
+                        <p style={{ margin: 0, fontSize: '14px', fontWeight: '500' }}>
+                            {notification.message}
+                        </p>
+                        <p style={{ margin: '5px 0 0 0', fontSize: '12px', opacity: 0.7 }}>
+                            {notification.timestamp.toLocaleTimeString()}
+                        </p>
+                    </div>
+                ))}
+            </div>
+        );
+
+        if (pickupStep === 'quote') {
+            return (
+                <div>
+                    <NotificationCenter />
+                    <div style={{ maxWidth: '500px', margin: '0 auto' }}>
+                        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                            <div style={{ 
+                                width: '80px', 
+                                height: '80px', 
+                                background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', 
+                                borderRadius: '50%', 
+                                margin: '0 auto 20px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <Truck size={40} color="white" />
+                            </div>
+                            <h2 style={{ margin: '0 0 10px 0', color: '#1f2937', fontSize: '1.8rem' }}>Schedule Artwork Pickup</h2>
+                            <p style={{ margin: 0, color: '#6b7280', fontSize: '1.1rem' }}>
+                                Order #{mockOrderId} • Safe & Secure Transport
+                            </p>
+                        </div>
+
+                        <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', marginBottom: '25px' }}>
+                            <h3 style={{ margin: '0 0 15px 0', color: '#374151', fontSize: '1.1rem' }}>Pickup Details</h3>
+                            
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                                    <MapPin size={16} style={{ display: 'inline', marginRight: '5px' }} />
+                                    Pickup Address
+                                </label>
+                                <textarea
+                                    value={pickupDetails.address}
+                                    onChange={(e) => setPickupDetails(prev => ({...prev, address: e.target.value}))}
+                                    placeholder="Enter your complete address including apartment/unit number..."
+                                    style={{
+                                        width: '100%',
+                                        padding: '12px',
+                                        border: '2px solid #e5e7eb',
+                                        borderRadius: '8px',
+                                        fontSize: '16px',
+                                        resize: 'vertical',
+                                        minHeight: '80px',
+                                        fontFamily: 'inherit'
+                                    }}
+                                    rows={3}
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                                    <Phone size={16} style={{ display: 'inline', marginRight: '5px' }} />
+                                    Contact Number
+                                </label>
+                                <input
+                                    type="tel"
+                                    value={pickupDetails.phone}
+                                    onChange={(e) => setPickupDetails(prev => ({...prev, phone: e.target.value}))}
+                                    placeholder="Your phone number"
+                                    style={{
+                                        width: '100%',
+                                        padding: '12px',
+                                        border: '2px solid #e5e7eb',
+                                        borderRadius: '8px',
+                                        fontSize: '16px'
+                                    }}
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                                    Special Instructions (Optional)
+                                </label>
+                                <textarea
+                                    value={pickupDetails.instructions}
+                                    onChange={(e) => setPickupDetails(prev => ({...prev, instructions: e.target.value}))}
+                                    placeholder="Buzzer code, gate instructions, best entrance to use..."
+                                    style={{
+                                        width: '100%',
+                                        padding: '12px',
+                                        border: '2px solid #e5e7eb',
+                                        borderRadius: '8px',
+                                        fontSize: '16px',
+                                        resize: 'vertical',
+                                        minHeight: '60px',
+                                        fontFamily: 'inherit'
+                                    }}
+                                    rows={2}
+                                />
+                            </div>
+
+                            <div style={{ background: '#eff6ff', padding: '15px', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                                    <Package size={16} style={{ color: '#3b82f6', marginRight: '8px' }} />
+                                    <span style={{ fontSize: '14px', fontWeight: '600', color: '#1e40af' }}>What we're picking up:</span>
+                                </div>
+                                <input
+                                    type="text"
+                                    value={pickupDetails.itemDescription}
+                                    onChange={(e) => setPickupDetails(prev => ({...prev, itemDescription: e.target.value}))}
+                                    style={{
+                                        width: '100%',
+                                        padding: '8px',
+                                        border: '1px solid #bfdbfe',
+                                        borderRadius: '6px',
+                                        fontSize: '14px',
+                                        background: 'white'
+                                    }}
+                                />
+                            </div>
+                        </div>
+
+                        {error && (
+                            <div style={{ 
+                                background: '#fee2e2', 
+                                border: '1px solid #fecaca', 
+                                borderRadius: '8px', 
+                                padding: '15px',
+                                marginBottom: '20px'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                    <XCircle size={20} style={{ color: '#dc2626', marginRight: '10px' }} />
+                                    <p style={{ margin: 0, color: '#dc2626', fontSize: '14px', fontWeight: '500' }}>{error}</p>
+                                </div>
+                            </div>
+                        )}
+
+                        <button
+                            onClick={getQuote}
+                            disabled={loading || !pickupDetails.address.trim() || !pickupDetails.phone.trim()}
+                            style={{
+                                width: '100%',
+                                background: loading ? '#9ca3af' : 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                                color: 'white',
+                                padding: '16px',
+                                border: 'none',
+                                borderRadius: '12px',
+                                fontSize: '16px',
+                                fontWeight: '600',
+                                cursor: loading ? 'not-allowed' : 'pointer',
+                                transition: 'all 0.2s ease'
+                            }}
+                        >
+                            {loading ? (
+                                <span>
+                                    <span className="pulse" style={{ display: 'inline-block', marginRight: '10px' }}>⏳</span>
+                                    Getting Quote...
+                                </span>
+                            ) : (
+                                'Get Pickup Quote'
+                            )}
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        if (pickupStep === 'confirm' && quote) {
+            return (
+                <div>
+                    <NotificationCenter />
+                    <div style={{ maxWidth: '500px', margin: '0 auto' }}>
+                        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                            <div style={{ 
+                                width: '80px', 
+                                height: '80px', 
+                                background: 'linear-gradient(135deg, #10b981, #047857)', 
+                                borderRadius: '50%', 
+                                margin: '0 auto 20px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <CheckCircle size={40} color="white" />
+                            </div>
+                            <h2 style={{ margin: '0 0 10px 0', color: '#1f2937', fontSize: '1.8rem' }}>Confirm Your Pickup</h2>
+                            <p style={{ margin: 0, color: '#6b7280', fontSize: '1.1rem' }}>
+                                Review details and schedule pickup
+                            </p>
+                        </div>
+
+                        <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', marginBottom: '25px' }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '20px' }}>
+                                <MapPin size={20} style={{ color: '#6b7280', marginRight: '12px', marginTop: '2px' }} />
+                                <div style={{ flex: 1 }}>
+                                    <p style={{ margin: '0 0 5px 0', fontSize: '14px', fontWeight: '600', color: '#374151' }}>Pickup Address</p>
+                                    <p style={{ margin: 0, color: '#6b7280', fontSize: '14px', lineHeight: '1.5' }}>
+                                        {pickupDetails.address}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {pickupDetails.instructions && (
+                                <div style={{ background: '#eff6ff', padding: '12px', borderRadius: '8px', marginBottom: '20px' }}>
+                                    <p style={{ margin: '0 0 5px 0', fontSize: '12px', fontWeight: '600', color: '#1e40af' }}>Special Instructions</p>
+                                    <p style={{ margin: 0, fontSize: '14px', color: '#1e40af' }}>{pickupDetails.instructions}</p>
+                                </div>
+                            )}
+
+                            <div style={{ 
+                                background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)', 
+                                padding: '20px', 
+                                borderRadius: '12px',
+                                border: '1px solid #0ea5e9'
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                        <p style={{ margin: '0 0 5px 0', fontSize: '14px', fontWeight: '600', color: '#0c4a6e' }}>Estimated Cost</p>
+                                        <p style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: '#0ea5e9' }}>
+                                            ${(quote.estimatedFee / 100).toFixed(2)}
+                                        </p>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <p style={{ margin: '0 0 5px 0', fontSize: '14px', fontWeight: '600', color: '#0c4a6e' }}>Pickup Time</p>
+                                        <p style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#0ea5e9', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                                            <Clock size={16} style={{ marginRight: '5px' }} />
+                                            ~{Math.round(quote.estimatedDuration / 60)} min
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {error && (
+                            <div style={{ 
+                                background: '#fee2e2', 
+                                border: '1px solid #fecaca', 
+                                borderRadius: '8px', 
+                                padding: '15px',
+                                marginBottom: '20px'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                    <XCircle size={20} style={{ color: '#dc2626', marginRight: '10px' }} />
+                                    <p style={{ margin: 0, color: '#dc2626', fontSize: '14px', fontWeight: '500' }}>{error}</p>
+                                </div>
+                            </div>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '15px' }}>
+                            <button
+                                onClick={() => setPickupStep('quote')}
+                                style={{
+                                    flex: '1',
+                                    background: '#f3f4f6',
+                                    color: '#374151',
+                                    padding: '16px',
+                                    border: '2px solid #e5e7eb',
+                                    borderRadius: '12px',
+                                    fontSize: '16px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Back
+                            </button>
+                            <button
+                                onClick={schedulePickup}
+                                disabled={loading}
+                                style={{
+                                    flex: '2',
+                                    background: loading ? '#9ca3af' : 'linear-gradient(135deg, #10b981, #047857)',
+                                    color: 'white',
+                                    padding: '16px',
+                                    border: 'none',
+                                    borderRadius: '12px',
+                                    fontSize: '16px',
+                                    fontWeight: '600',
+                                    cursor: loading ? 'not-allowed' : 'pointer'
+                                }}
+                            >
+                                {loading ? (
+                                    <span>
+                                        <span className="pulse" style={{ display: 'inline-block', marginRight: '10px' }}>⏳</span>
+                                        Scheduling...
+                                    </span>
+                                ) : (
+                                    'Confirm Pickup'
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if ((pickupStep === 'scheduled' || pickupStep === 'tracking') && deliveryInfo) {
+            return (
+                <div>
+                    <NotificationCenter />
+                    <div style={{ maxWidth: '500px', margin: '0 auto' }}>
+                        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                            <div style={{ 
+                                width: '80px', 
+                                height: '80px', 
+                                background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', 
+                                borderRadius: '50%', 
+                                margin: '0 auto 20px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <Truck size={40} color="white" />
+                            </div>
+                            <h2 style={{ margin: '0 0 10px 0', color: '#1f2937', fontSize: '1.8rem' }}>Pickup In Progress</h2>
+                            <p style={{ margin: 0, color: '#6b7280', fontSize: '1.1rem' }}>
+                                Order #{mockOrderId}
+                            </p>
+                        </div>
+
+                        <div style={{ background: '#f8fafc', padding: '25px', borderRadius: '12px', marginBottom: '25px' }}>
+                            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                                <div className={`status-indicator ${getStatusColor(deliveryInfo.status)}`}>
+                                    {deliveryInfo.status === 'pending' && <span className="pulse">🔍</span>}
+                                    {deliveryInfo.status === 'en_route_to_pickup' && <span>🚗</span>}
+                                    {deliveryInfo.status === 'at_pickup' && <span>📍</span>}
+                                    {deliveryInfo.status === 'picked_up' && <span>✅</span>}
+                                    {deliveryInfo.status === 'delivered' && <span>🏆</span>}
+                                    <span style={{ marginLeft: '8px' }}>{getStatusMessage(deliveryInfo.status)}</span>
+                                </div>
+                            </div>
+
+                            {deliveryInfo.courier && (
+                                <div style={{ 
+                                    background: 'white', 
+                                    padding: '20px', 
+                                    borderRadius: '12px',
+                                    border: '1px solid #e5e7eb',
+                                    marginBottom: '20px'
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div>
+                                            <p style={{ margin: '0 0 5px 0', fontSize: '14px', fontWeight: '600', color: '#374151' }}>Your Driver</p>
+                                            <p style={{ margin: '0 0 5px 0', fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>
+                                                {deliveryInfo.courier.name}
+                                            </p>
+                                            <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>
+                                                {deliveryInfo.courier.vehicle}
+                                            </p>
+                                        </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: '5px' }}>
+                                                <Star size={16} style={{ color: '#fbbf24', marginRight: '3px' }} />
+                                                <span style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>
+                                                    {deliveryInfo.courier.rating}
+                                                </span>
+                                            </div>
+                                            <p style={{ margin: 0, fontSize: '12px', color: '#6b7280' }}>Rating</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {deliveryInfo.trackingUrl && (
+                                <a
+                                    href={deliveryInfo.trackingUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                        display: 'block',
+                                        width: '100%',
+                                        background: 'linear-gradient(135deg, #374151, #1f2937)',
+                                        color: 'white',
+                                        textAlign: 'center',
+                                        padding: '16px',
+                                        borderRadius: '12px',
+                                        textDecoration: 'none',
+                                        fontSize: '16px',
+                                        fontWeight: '600',
+                                        marginBottom: '20px'
+                                    }}
+                                >
+                                    🔗 Open Live Tracking in Uber App
+                                </a>
+                            )}
+
+                            <div style={{ 
+                                background: '#ecfdf5', 
+                                border: '1px solid #10b981', 
+                                borderRadius: '12px', 
+                                padding: '20px'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+                                    <CheckCircle size={20} style={{ color: '#10b981', marginRight: '10px' }} />
+                                    <p style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#065f46' }}>
+                                        Everything is on track!
+                                    </p>
+                                </div>
+                                <p style={{ margin: 0, fontSize: '14px', color: '#047857', lineHeight: '1.5' }}>
+                                    You'll receive SMS updates about your pickup status. We'll also send you notifications 
+                                    when your artwork arrives at our shop and when we begin the framing process.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (pickupStep === 'completed') {
+            return (
+                <div>
+                    <NotificationCenter />
+                    <div style={{ maxWidth: '500px', margin: '0 auto' }}>
+                        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                            <div style={{ 
+                                width: '100px', 
+                                height: '100px', 
+                                background: 'linear-gradient(135deg, #10b981, #047857)', 
+                                borderRadius: '50%', 
+                                margin: '0 auto 20px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                animation: 'pulse 2s infinite'
+                            }}>
+                                <CheckCircle size={50} color="white" />
+                            </div>
+                            <h2 style={{ margin: '0 0 10px 0', color: '#1f2937', fontSize: '2rem' }}>Pickup Complete!</h2>
+                            <p style={{ margin: 0, color: '#6b7280', fontSize: '1.2rem' }}>
+                                Your artwork has arrived safely at Jay's Frames
+                            </p>
+                        </div>
+
+                        <div style={{ background: '#f8fafc', padding: '30px', borderRadius: '12px', marginBottom: '25px' }}>
+                            <div style={{ 
+                                background: 'linear-gradient(135deg, #ecfdf5, #d1fae5)', 
+                                padding: '25px', 
+                                borderRadius: '12px',
+                                border: '2px solid #10b981',
+                                marginBottom: '25px'
+                            }}>
+                                <h3 style={{ margin: '0 0 15px 0', color: '#065f46', fontSize: '1.3rem', textAlign: 'center' }}>
+                                    🎉 What's Next?
+                                </h3>
+                                <div style={{ display: 'grid', gap: '15px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                        <div style={{ 
+                                            width: '30px', 
+                                            height: '30px', 
+                                            background: '#10b981', 
+                                            borderRadius: '50%', 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center',
+                                            marginRight: '15px'
+                                        }}>
+                                            <span style={{ color: 'white', fontSize: '14px', fontWeight: 'bold' }}>1</span>
+                                        </div>
+                                        <div>
+                                            <p style={{ margin: '0 0 2px 0', fontSize: '14px', fontWeight: '600', color: '#065f46' }}>
+                                                Quality Inspection
+                                            </p>
+                                            <p style={{ margin: 0, fontSize: '13px', color: '#047857' }}>
+                                                We'll carefully inspect and measure your artwork
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                        <div style={{ 
+                                            width: '30px', 
+                                            height: '30px', 
+                                            background: '#10b981', 
+                                            borderRadius: '50%', 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center',
+                                            marginRight: '15px'
+                                        }}>
+                                            <span style={{ color: 'white', fontSize: '14px', fontWeight: 'bold' }}>2</span>
+                                        </div>
+                                        <div>
+                                            <p style={{ margin: '0 0 2px 0', fontSize: '14px', fontWeight: '600', color: '#065f46' }}>
+                                                Material Sourcing
+                                            </p>
+                                            <p style={{ margin: 0, fontSize: '13px', color: '#047857' }}>
+                                                We'll order premium frame materials for your piece
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                        <div style={{ 
+                                            width: '30px', 
+                                            height: '30px', 
+                                            background: '#10b981', 
+                                            borderRadius: '50%', 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center',
+                                            marginRight: '15px'
+                                        }}>
+                                            <span style={{ color: 'white', fontSize: '14px', fontWeight: 'bold' }}>3</span>
+                                        </div>
+                                        <div>
+                                            <p style={{ margin: '0 0 2px 0', fontSize: '14px', fontWeight: '600', color: '#065f46' }}>
+                                                Expert Framing
+                                            </p>
+                                            <p style={{ margin: 0, fontSize: '13px', color: '#047857' }}>
+                                                Professional crafting with progress updates
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                        <div style={{ 
+                                            width: '30px', 
+                                            height: '30px', 
+                                            background: '#10b981', 
+                                            borderRadius: '50%', 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center',
+                                            marginRight: '15px'
+                                        }}>
+                                            <span style={{ color: 'white', fontSize: '14px', fontWeight: 'bold' }}>4</span>
+                                        </div>
+                                        <div>
+                                            <p style={{ margin: '0 0 2px 0', fontSize: '14px', fontWeight: '600', color: '#065f46' }}>
+                                                Ready for Pickup
+                                            </p>
+                                            <p style={{ margin: 0, fontSize: '13px', color: '#047857' }}>
+                                                Notification when your masterpiece is complete
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{ 
+                                background: '#eff6ff', 
+                                border: '1px solid #3b82f6', 
+                                borderRadius: '12px', 
+                                padding: '20px',
+                                textAlign: 'center'
+                            }}>
+                                <h4 style={{ margin: '0 0 10px 0', color: '#1e40af', fontSize: '1.1rem' }}>
+                                    📱 Stay Connected
+                                </h4>
+                                <p style={{ margin: 0, fontSize: '14px', color: '#1e40af', lineHeight: '1.5' }}>
+                                    We'll send you SMS and email updates at every step. You can also call us anytime at 
+                                    <strong style={{ marginLeft: '5px' }}>(713) 555-FRAME</strong>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '15px' }}>
+                            <button
+                                onClick={() => window.open('tel:+17135553726', '_self')}
+                                style={{
+                                    flex: '1',
+                                    background: '#f3f4f6',
+                                    color: '#374151',
+                                    padding: '16px',
+                                    border: '2px solid #e5e7eb',
+                                    borderRadius: '12px',
+                                    fontSize: '16px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}
+                            >
+                                <Phone size={18} style={{ marginRight: '8px' }} />
+                                Call Shop
+                            </button>
+                            <button
+                                onClick={() => window.location.href = '/orders/' + mockOrderId}
+                                style={{
+                                    flex: '1',
+                                    background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                                    color: 'white',
+                                    padding: '16px',
+                                    border: 'none',
+                                    borderRadius: '12px',
+                                    fontSize: '16px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Track Order
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        return null;
+    }
+
+    // Render the app
+    ReactDOM.render(<UberPickupApp />, document.getElementById('uber-pickup-app'));
+</script>
+
+<style>
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    input:focus, textarea:focus {
+        outline: none !important;
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+    }
+    
+    button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    button:active {
+        transform: translateY(0);
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+</style>
+```
+
+</body>
+</html>
