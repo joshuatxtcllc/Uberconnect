@@ -1,0 +1,295 @@
+// server.js - Express server for Uber integration
+const express = require(‘express’);
+const cors = require(‘cors’);
+const axios = require(‘axios’);
+require(‘dotenv’).config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.static(‘public’));
+
+// Uber API configuration
+const UBER_API_BASE = ‘https://api.uber.com/v1.2’;
+const UBER_DIRECT_API = ‘https://api.uber.com/v1/customers’;
+
+// Store for tracking deliveries (in production, use a database)
+const deliveryTracker = new Map();
+
+// OAuth token management
+let uberAccessToken = null;
+let tokenExpiry = null;
+
+// Get Uber OAuth token
+async function getUberToken() {
+if (uberAccessToken && tokenExpiry && Date.now() < tokenExpiry) {
+return uberAccessToken;
+}
+
+try {
+const response = await axios.post(‘https://login.uber.com/oauth/v2/token’, {
+client_id: process.env.UBER_CLIENT_ID,
+client_secret: process.env.UBER_CLIENT_SECRET,
+grant_type: ‘client_credentials’,
+scope: ‘delivery’
+}, {
+headers: {
+‘Content-Type’: ‘application/x-www-form-urlencoded’
+}
+});
+
+```
+uberAccessToken = response.data.access_token;
+tokenExpiry = Date.now() + (response.data.expires_in * 1000);
+return uberAccessToken;
+```
+
+} catch (error) {
+console.error(‘Error getting Uber token:’, error.response?.data || error.message);
+throw new Error(‘Failed to authenticate with Uber’);
+}
+}
+
+// Create delivery quote
+app.post(’/api/uber/quote’, async (req, res) => {
+try {
+const { pickupAddress, dropoffAddress } = req.body;
+
+```
+const token = await getUberToken();
+
+const quoteData = {
+  pickup_address: pickupAddress,
+  dropoff_address: dropoffAddress || process.env.SHOP_ADDRESS,
+  pickup_phone_number: req.body.customerPhone,
+  dropoff_phone_number: process.env.SHOP_PHONE
+};
+
+const response = await axios.post(`${UBER_DIRECT_API}/${process.env.UBER_CUSTOMER_ID}/delivery_quotes`, quoteData, {
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  }
+});
+
+res.json({
+  success: true,
+  quote: response.data,
+  estimatedFee: response.data.fee,
+  estimatedDuration: response.data.duration_estimate
+});
+```
+
+} catch (error) {
+console.error(‘Quote error:’, error.response?.data || error.message);
+res.status(500).json({
+success: false,
+error: ‘Failed to get delivery quote’,
+details: error.response?.data || error.message
+});
+}
+});
+
+// Schedule pickup
+app.post(’/api/uber/schedule-pickup’, async (req, res) => {
+try {
+const {
+orderId,
+customerName,
+customerPhone,
+pickupAddress,
+pickupInstructions,
+itemDescription
+} = req.body;
+
+```
+const token = await getUberToken();
+
+const deliveryData = {
+  pickup_address: pickupAddress,
+  pickup_name: customerName,
+  pickup_phone_number: customerPhone,
+  pickup_notes: pickupInstructions || `Pickup for Jay's Frames order #${orderId}`,
+  dropoff_address: process.env.SHOP_ADDRESS,
+  dropoff_name: "Jay's Frames",
+  dropoff_phone_number: process.env.SHOP_PHONE,
+  dropoff_notes: `Custom frame order #${orderId}`,
+  manifest_items: [{
+    name: itemDescription || "Artwork for framing",
+    quantity: 1,
+    size: "small_bag"
+  }],
+  pickup_ready_dt: Math.floor(Date.now() / 1000), // Now
+  pickup_deadline_dt: Math.floor((Date.now() + 3600000) / 1000), // 1 hour from now
+  dropoff_ready_dt: Math.floor(Date.now() / 1000),
+  dropoff_deadline_dt: Math.floor((Date.now() + 7200000) / 1000), // 2 hours from now
+  requires_id: false,
+  tip: 0 // Can be customized
+};
+
+const response = await axios.post(`${UBER_DIRECT_API}/${process.env.UBER_CUSTOMER_ID}/deliveries`, deliveryData, {
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  }
+});
+
+// Store delivery info for tracking
+const deliveryId = response.data.id;
+deliveryTracker.set(deliveryId, {
+  orderId,
+  customerPhone,
+  status: 'pending',
+  trackingUrl: response.data.tracking_url,
+  createdAt: new Date()
+});
+
+res.json({
+  success: true,
+  deliveryId: deliveryId,
+  trackingUrl: response.data.tracking_url,
+  courier: response.data.courier,
+  estimatedArrival: response.data.dropoff_eta
+});
+```
+
+} catch (error) {
+console.error(‘Pickup scheduling error:’, error.response?.data || error.message);
+res.status(500).json({
+success: false,
+error: ‘Failed to schedule pickup’,
+details: error.response?.data || error.message
+});
+}
+});
+
+// Track delivery status
+app.get(’/api/uber/track/:deliveryId’, async (req, res) => {
+try {
+const { deliveryId } = req.params;
+const token = await getUberToken();
+
+```
+const response = await axios.get(`${UBER_DIRECT_API}/${process.env.UBER_CUSTOMER_ID}/deliveries/${deliveryId}`, {
+  headers: {
+    'Authorization': `Bearer ${token}`
+  }
+});
+
+const delivery = deliveryTracker.get(deliveryId);
+if (delivery) {
+  delivery.status = response.data.status;
+  deliveryTracker.set(deliveryId, delivery);
+}
+
+res.json({
+  success: true,
+  status: response.data.status,
+  courier: response.data.courier,
+  trackingUrl: response.data.tracking_url,
+  pickupEta: response.data.pickup_eta,
+  dropoffEta: response.data.dropoff_eta
+});
+```
+
+} catch (error) {
+console.error(‘Tracking error:’, error.response?.data || error.message);
+res.status(500).json({
+success: false,
+error: ‘Failed to track delivery’
+});
+}
+});
+
+// Webhook for delivery status updates
+app.post(’/api/uber/webhook’, (req, res) => {
+try {
+const { event_type, resource_href, event_id } = req.body;
+
+```
+// Extract delivery ID from resource_href
+const deliveryId = resource_href.split('/').pop();
+const delivery = deliveryTracker.get(deliveryId);
+
+if (delivery) {
+  console.log(`Delivery ${deliveryId} status update: ${event_type}`);
+  
+  // Update local tracking
+  delivery.status = event_type;
+  delivery.lastUpdate = new Date();
+  deliveryTracker.set(deliveryId, delivery);
+  
+  // Here you would typically:
+  // 1. Update your database
+  // 2. Send customer notifications
+  // 3. Update order status in your system
+  
+  // Example notification logic
+  if (event_type === 'delivery.status_changed.picked_up') {
+    console.log(`Order ${delivery.orderId} has been picked up`);
+    // Send SMS/email notification to customer
+  } else if (event_type === 'delivery.status_changed.delivered') {
+    console.log(`Order ${delivery.orderId} has been delivered to the shop`);
+    // Trigger shop notification and order processing
+  }
+}
+
+res.status(200).json({ received: true });
+```
+
+} catch (error) {
+console.error(‘Webhook error:’, error);
+res.status(400).json({ error: ‘Webhook processing failed’ });
+}
+});
+
+// Cancel delivery
+app.post(’/api/uber/cancel/:deliveryId’, async (req, res) => {
+try {
+const { deliveryId } = req.params;
+const token = await getUberToken();
+
+```
+const response = await axios.post(`${UBER_DIRECT_API}/${process.env.UBER_CUSTOMER_ID}/deliveries/${deliveryId}/cancel`, {}, {
+  headers: {
+    'Authorization': `Bearer ${token}`
+  }
+});
+
+const delivery = deliveryTracker.get(deliveryId);
+if (delivery) {
+  delivery.status = 'cancelled';
+  deliveryTracker.set(deliveryId, delivery);
+}
+
+res.json({
+  success: true,
+  message: 'Delivery cancelled successfully'
+});
+```
+
+} catch (error) {
+console.error(‘Cancellation error:’, error.response?.data || error.message);
+res.status(500).json({
+success: false,
+error: ‘Failed to cancel delivery’
+});
+}
+});
+
+// Health check
+app.get(’/health’, (req, res) => {
+res.json({ status: ‘OK’, timestamp: new Date().toISOString() });
+});
+
+// Serve the frontend
+app.get(’/’, (req, res) => {
+res.sendFile(__dirname + ‘/public/index.html’);
+});
+
+app.listen(PORT, () => {
+console.log(`Uber integration server running on port ${PORT}`);
+});
