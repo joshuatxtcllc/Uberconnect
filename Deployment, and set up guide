@@ -1,0 +1,296 @@
+# Jay’s Frames Uber Integration - Deployment Guide
+
+## 🚀 Quick Start on Replit
+
+### 1. Create New Replit Project
+
+1. Go to [Replit.com](https://replit.com)
+1. Click “Create Repl”
+1. Choose “Node.js” template
+1. Name it “jays-frames-uber-integration”
+
+### 2. Setup Project Files
+
+Copy these files into your Replit project:
+
+**File Structure:**
+
+```
+├── server.js              # Main backend server
+├── package.json           # Dependencies
+├── .env                   # Environment variables
+└── public/
+    └── index.html         # Frontend page
+```
+
+### 3. Install Dependencies
+
+In the Replit console, run:
+
+```bash
+npm install
+```
+
+### 4. Configure Environment Variables
+
+#### In Replit Secrets (recommended):
+
+Go to “Secrets” tab in Replit and add:
+
+```
+UBER_CLIENT_ID=your_uber_client_id
+UBER_CLIENT_SECRET=your_uber_client_secret  
+UBER_CUSTOMER_ID=your_uber_customer_id
+SHOP_ADDRESS=123 Main St, Houston, TX 77001, USA
+SHOP_PHONE=+17135553726
+```
+
+#### Or use .env file:
+
+Create `.env` file with the provided template
+
+### 5. Get Uber API Credentials
+
+#### Step 1: Uber Developer Account
+
+1. Go to [developer.uber.com](https://developer.uber.com)
+1. Sign up/login with business account
+1. Create new app for “Delivery”
+
+#### Step 2: Get API Keys
+
+1. In Uber dashboard → Apps → Your App
+1. Copy `Client ID` and `Client Secret`
+1. For Customer ID, you’ll need to contact Uber Direct sales
+
+#### Step 3: Setup Uber Direct (Business Account Required)
+
+- Uber pickup integration requires **Uber Direct** business account
+- Contact Uber Direct sales: [business.uber.com](https://business.uber.com)
+- Alternative: Use deep-link integration (see Alternative Setup below)
+
+### 6. Run the Application
+
+```bash
+npm start
+```
+
+Your app will be available at your Replit URL!
+
+-----
+
+## 🔄 Alternative Setup (Deep Links - Easier)
+
+If you don’t have Uber Direct access yet, you can use Uber deep links:
+
+### Modified server.js for Deep Links:
+
+```javascript
+// Add this route for deep link integration
+app.post('/api/uber/deep-link', (req, res) => {
+  const { pickupAddress, dropoffAddress, customerPhone } = req.body;
+  
+  const uberUrl = `https://m.uber.com/looking?action=setPickup&pickup[latitude]=&pickup[longitude]=&pickup[formatted_address]=${encodeURIComponent(pickupAddress)}&dropoff[formatted_address]=${encodeURIComponent(dropoffAddress || process.env.SHOP_ADDRESS)}`;
+  
+  res.json({
+    success: true,
+    uberUrl: uberUrl,
+    message: "Redirect customer to this URL to book Uber"
+  });
+});
+```
+
+### Frontend modification for deep links:
+
+Replace the `schedulePickup` function to use deep links instead of Direct API.
+
+-----
+
+## 🌐 Deploy to Netlify (Frontend Only)
+
+### Option 1: Static Frontend
+
+1. Create `netlify.toml`:
+
+```toml
+[build]
+  publish = "public"
+  
+[[redirects]]
+  from = "/api/*"
+  to = "https://your-replit-app.replit.dev/api/:splat"
+  status = 200
+```
+
+1. Deploy public folder to Netlify
+1. Backend stays on Replit
+
+### Option 2: Full Stack on Railway/Render
+
+For production, consider Railway or Render for the backend:
+
+**Railway deployment:**
+
+```bash
+# Connect GitHub repo
+# Add environment variables
+# Railway auto-deploys on push
+```
+
+-----
+
+## 📱 Integration with Your Existing App
+
+### React Component Integration:
+
+```jsx
+import UberPickupComponent from './components/UberPickupComponent';
+
+function OrderPage({ orderId, customerInfo }) {
+  const handleStatusUpdate = (eventType, data) => {
+    // Update your order management system
+    console.log('Pickup status:', eventType, data);
+  };
+
+  return (
+    <div>
+      {/* Your existing order form */}
+      
+      <UberPickupComponent 
+        orderId={orderId}
+        customerInfo={customerInfo}
+        onStatusUpdate={handleStatusUpdate}
+      />
+    </div>
+  );
+}
+```
+
+### API Integration:
+
+```javascript
+// Call from your existing order process
+const schedulePickup = async (orderData) => {
+  const response = await fetch('/api/uber/schedule-pickup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(orderData)
+  });
+  
+  return response.json();
+};
+```
+
+-----
+
+## 🔧 Production Considerations
+
+### 1. Database Integration
+
+Add proper database storage:
+
+```javascript
+// Example with PostgreSQL
+const { Pool } = require('pg');
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+// Store delivery info
+await pool.query(
+  'INSERT INTO deliveries (order_id, delivery_id, status) VALUES ($1, $2, $3)',
+  [orderId, deliveryId, 'pending']
+);
+```
+
+### 2. Notification System
+
+Add SMS/Email notifications:
+
+```javascript
+const twilio = require('twilio');
+const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_TOKEN);
+
+// Send SMS notification
+await client.messages.create({
+  body: 'Your artwork has been picked up!',
+  from: process.env.TWILIO_PHONE,
+  to: customerPhone
+});
+```
+
+### 3. Error Handling & Logging
+
+```javascript
+const winston = require('winston');
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.json(),
+  transports: [
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    new winston.transports.Console()
+  ]
+});
+```
+
+### 4. Security
+
+```javascript
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+
+app.use(helmet());
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+}));
+```
+
+-----
+
+## 🧪 Testing
+
+### Test the Integration:
+
+1. Use demo/sandbox Uber credentials
+1. Test with real addresses in your city
+1. Verify webhook endpoints
+1. Check notification delivery
+
+### Webhook Testing:
+
+Use ngrok for local webhook testing:
+
+```bash
+ngrok http 3000
+# Use ngrok URL for webhook endpoint in Uber dashboard
+```
+
+-----
+
+## 📞 Support & Next Steps
+
+### Immediate Next Steps:
+
+1. ✅ Deploy basic version on Replit
+1. ✅ Test with deep-link integration
+1. 📞 Contact Uber Direct for business account
+1. 🔗 Integrate with your existing order system
+1. 📱 Add SMS/email notifications
+1. 🚀 Deploy to production
+
+### Need Help?
+
+- Uber Direct Sales: [business.uber.com](https://business.uber.com)
+- Uber Developer Docs: [developer.uber.com/docs](https://developer.uber.com/docs)
+- This implementation: Comment below with questions!
+
+-----
+
+## 💡 Pro Tips
+
+1. **Start with deep-links** - Get working immediately while waiting for Direct API access
+1. **Test thoroughly** - Use small dollar amounts during testing
+1. **Customer communication** - Clear expectations about pickup process
+1. **Backup plan** - Always have manual pickup option available
+1. **Track everything** - Log all API calls for debugging
+
+Ready to revolutionize your frame shop’s pickup experience! 🎨📦🚚
